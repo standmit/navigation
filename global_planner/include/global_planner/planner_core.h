@@ -125,13 +125,15 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          * @brief Compute a plan to a goal after the potential for a start point has already been computed (Note: You should call computePotential first)
          * @param start_x
          * @param start_y
+         * @param start_z
          * @param end_x
          * @param end_y
          * @param goal The goal pose to create a plan to
          * @param plan The plan... filled by the planner
          * @return True if a valid plan was found, false otherwise
          */
-        bool getPlanFromPotential(double start_x, double start_y, double end_x, double end_y,
+        bool getPlanFromPotential(double start_x, double start_y, double start_z,
+                                  double end_x, double end_y,
                                   const geometry_msgs::PoseStamped& goal,
                                   std::vector<geometry_msgs::PoseStamped>& plan);
 

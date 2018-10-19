@@ -305,7 +305,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     if (found_legal) {
         //extract the plan
-        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
+        if (getPlanFromPotential(start_x, start_y, start.pose.position.z, goal_x, goal_y, goal, plan)) {
             //make sure the goal we push on has the same timestamp as the rest of the plan
             geometry_msgs::PoseStamped goal_copy = goal;
             goal_copy.header.stamp = ros::Time::now();
@@ -348,9 +348,10 @@ void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& p
     plan_pub_.publish(gui_path);
 }
 
-bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double goal_x, double goal_y,
-                                      const geometry_msgs::PoseStamped& goal,
-                                       std::vector<geometry_msgs::PoseStamped>& plan) {
+bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double start_z,
+                                         double goal_x, double goal_y,
+                                         const geometry_msgs::PoseStamped& goal,
+                                         std::vector<geometry_msgs::PoseStamped>& plan) {
     if (!initialized_) {
         ROS_ERROR(
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
@@ -370,6 +371,8 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
     }
 
     ros::Time plan_time = ros::Time::now();
+    double z_step = (goal.pose.position.z - start_z) / path.size();
+    double current_z = start_z - z_step;
     for (int i = path.size() -1; i>=0; i--) {
         std::pair<float, float> point = path[i];
         //convert the plan to world coordinates
@@ -381,7 +384,8 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
         pose.header.frame_id = global_frame;
         pose.pose.position.x = world_x;
         pose.pose.position.y = world_y;
-        pose.pose.position.z = 0.0;
+        current_z += z_step;
+        pose.pose.position.z = current_z;
         pose.pose.orientation.x = 0.0;
         pose.pose.orientation.y = 0.0;
         pose.pose.orientation.z = 0.0;
