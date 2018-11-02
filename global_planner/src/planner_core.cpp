@@ -310,6 +310,12 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
             geometry_msgs::PoseStamped goal_copy = goal;
             goal_copy.header.stamp = ros::Time::now();
             plan.push_back(goal_copy);
+
+            // add orientations if needed
+            orientation_filter_->processPath(start, plan);
+
+            //publish the plan for visualization purposes
+            publishPlan(plan);
         } else {
             ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
         }
@@ -317,11 +323,6 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         ROS_ERROR("Failed to get a plan.");
     }
 
-    // add orientations if needed
-    orientation_filter_->processPath(start, plan);
-    
-    //publish the plan for visualization purposes
-    publishPlan(plan);
     delete potential_array_;
     return !plan.empty();
 }
