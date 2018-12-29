@@ -270,6 +270,14 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   super_map.setStruct(&map);
   plugins.push_back(super_map);
 
+  ros::NodeHandle wallInflation(nh, "wall_inflation_layer");
+  move_parameter(nh, wallInflation, "cost_scaling_factor");
+  move_parameter(nh, wallInflation, "inflation_radius");
+  map["name"] = XmlRpc::XmlRpcValue("wall_inflation_layer");
+  map["type"] = XmlRpc::XmlRpcValue("costmap_2d::WallInflationLayer");
+  super_map.setStruct(&map);
+  plugins.push_back(super_map);
+
   super_array.setArray(&plugins);
   nh.setParam("plugins", super_array);
 }

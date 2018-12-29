@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(costmap_2d)
 
+add_compile_options(-std=c++11)
+
 find_package(catkin REQUIRED
         COMPONENTS
             cmake_modules
@@ -56,6 +58,7 @@ generate_dynamic_reconfigure_options(
   cfg/ObstaclePlugin.cfg
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
+  cfg/WallInflationPlugin.cfg
   cfg/VoxelPlugin.cfg
 )
 
@@ -109,6 +112,7 @@ add_library(layers
   plugins/obstacle_layer.cpp
   plugins/static_layer.cpp
   plugins/voxel_layer.cpp
+  plugins/wall_inflation_layer.cpp
   src/observation_buffer.cpp
 )
 add_dependencies(layers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
