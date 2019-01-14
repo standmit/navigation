@@ -73,6 +73,8 @@ class DijkstraExpansion : public Expander {
         }
 
         void setPreciseStart(bool precise){ precise_ = precise; }
+        void setProcessFullMap( bool value ){ fProcessFullMap_ = value; }
+
     private:
 
         /**
@@ -83,14 +85,21 @@ class DijkstraExpansion : public Expander {
          */
         void updateCell(unsigned char* costs, float* potential, int n); /** updates the cell at index n */
 
-        float getCost(unsigned char* costs, int n) {
-            float c = costs[n];
-            if (c < lethal_cost_ - 1 || (unknown_ && c==255)) {
-                c = c * factor_ + neutral_cost_;
-                if (c >= lethal_cost_)
-                    c = lethal_cost_ - 1;
-                return c;
+        unsigned char getCost(unsigned char* costs, int n)
+        {
+            unsigned char c = costs[n];
+            if(  ( c < lethal_cost_ - 1 )
+              || ( unknown_ && ( c == 255 ) ) )
+            {
+                float fc = c * factor_ + neutral_cost_;
+                if( fc >= lethal_cost_ )
+                {
+                    fc = lethal_cost_ - 1;
+                }
+
+                return (unsigned char)( fc );
             }
+
             return lethal_cost_;
         }
 
@@ -100,6 +109,7 @@ class DijkstraExpansion : public Expander {
         int currentEnd_, nextEnd_, overEnd_; /**< end points of arrays */
         bool *pending_; /**< pending_ cells during propagation */
         bool precise_;
+        bool fProcessFullMap_; /**< Flag for generating potentials for full map */
 
         /** block priority thresholds */
         float threshold_; /**< current threshold */
