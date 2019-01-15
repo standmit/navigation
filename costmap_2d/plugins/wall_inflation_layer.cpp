@@ -63,9 +63,6 @@ WallInflationLayer::WallInflationLayer()
     , cached_cell_processing_radius_(0)
     , dispersion_( 1.0 )
     , mean_( 0.0 )
-//    , seen_(nullptr)
-//    , cached_costs_(nullptr)
-//    , cached_distances_(nullptr)
     , last_min_x_(-std::numeric_limits<double>::max())
     , last_min_y_(-std::numeric_limits<double>::max())
     , last_max_x_(std::numeric_limits<double>::max())
@@ -187,9 +184,9 @@ void WallInflationLayer::onFootprintChanged()
     computeCaches();
     need_reinflation_ = true;
 
-    ROS_DEBUG("WallInflationLayer::onFootprintChanged(): num footprint points: %lu,"
-              " inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
-              layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
+    ROS_DEBUG_NAMED("WallInflationLayer", "onFootprintChanged(): num footprint points: %lu,"
+                    " inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
+                    layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
 }
 
 void WallInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -202,37 +199,34 @@ void WallInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     ROS_ASSERT_MSG(inflation_cells_.empty(), "The inflation list must be empty at the beginning of inflation");
 
     unsigned char* master_array = master_grid.getCharMap();
-    unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
+    unsigned int size_x = master_grid.getSizeInCellsX();
+    unsigned int size_y = master_grid.getSizeInCellsY();
 
-    bool fWallMovingMode = true;
-
-    if( fWallMovingMode )
+    for( uint32_t i = 0; i < size_y; ++i )
     {
-        for( uint32_t i = 0; i < size_y; ++i )
+        for( uint32_t j = 0; j < size_x; ++j )
         {
-            for( uint32_t j = 0; j < size_x; ++j )
+            if( master_grid.getCost( j, i ) != LETHAL_OBSTACLE )
             {
-                if( master_grid.getCost( j, i ) != LETHAL_OBSTACLE )
-                {
-                    master_grid.setCost( j, i, ALLMOST_LETHAL_OBSTACLE );
-                }
+                master_grid.setCost( j, i, ALLMOST_LETHAL_OBSTACLE );
             }
         }
     }
 
-    if( seen_.capacity() == 0 )
+    if( seen_.empty() )
     {
-        ROS_WARN("WallInflationLayer::updateCosts(): seen_ array is NULL");
+        ROS_WARN_NAMED( "WallInflationLayer", "updateCosts(): seen_ array is NULL" );
         seen_size_ = size_x * size_y;
         seen_.resize( seen_size_ );
     }
     else if( seen_size_ != size_x * size_y)
     {
-        ROS_WARN("WallInflationLayer::updateCosts(): seen_ array size is wrong");
+        ROS_WARN_NAMED( "WallInflationLayer", "updateCosts(): seen_ array size is wrong");
         seen_.clear();
         seen_size_ = size_x * size_y;
         seen_.resize( seen_size_ );
     }
+
     std::fill( seen_.begin(), seen_.end(), false );
 
     // We need to include in the inflation cells outside the bounding
@@ -271,8 +265,7 @@ void WallInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
 
     // Process cells by increasing distance; new cells are appended to the corresponding distance bin, so they
     // can overtake previously inserted but farther away cells
-    std::map<double, std::vector<CellData> >::iterator bin;
-    for (bin = inflation_cells_.begin(); bin != inflation_cells_.end(); ++bin)
+    for( auto bin = inflation_cells_.begin(); bin != inflation_cells_.end(); ++bin )
     {
         for (int i = 0; i < bin->second.size(); ++i)
         {
@@ -302,32 +295,19 @@ void WallInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
 
             // assign the cost associated with the distance from an obstacle to the cell
             unsigned char cost = costLookup(mx, my, sx, sy);
-            double len = distanceLookup( mx, my, sx, sy );
+            double        len  = distanceLookup( mx, my, sx, sy );
 
             unsigned char old_cost = master_array[index];
 
-            if( fWallMovingMode )
+            //! If previous cost was allmost_lethal, then rewrite it
+            if( old_cost == ALLMOST_LETHAL_OBSTACLE )
             {
-                if( old_cost == ALLMOST_LETHAL_OBSTACLE )
-                {
-                    master_array[index] = cost;
-                }
-                else
-                {
-                    master_array[index] = std::max(old_cost, cost);
-                }
+                master_array[index] = cost;
             }
             else
             {
-                if(  ( old_cost == NO_INFORMATION )
-                  && ( inflate_unknown_ ? ( cost > FREE_SPACE ) : (cost >= INSCRIBED_INFLATED_OBSTACLE ) ) )
-                {
-                    master_array[index] = cost;
-                }
-                else
-                {
-                    master_array[index] = std::max(old_cost, cost);
-                }
+                //! Else select the biggest
+                master_array[index] = std::max(old_cost, cost);
             }
 
             // attempt to put the neighbors of the current cell onto the inflation list
@@ -356,15 +336,6 @@ void WallInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     inflation_cells_.clear();
 }
 
-/**
- * @brief  Given an index of a cell in the costmap, place it into a list pending for obstacle inflation
- * @param  grid The costmap
- * @param  index The index of the cell
- * @param  mx The x coordinate of the cell (can be computed from the index, but saves time to store it)
- * @param  my The y coordinate of the cell (can be computed from the index, but saves time to store it)
- * @param  src_x The x index of the obstacle point inflation started at
- * @param  src_y The y index of the obstacle point inflation started at
- */
 inline void WallInflationLayer::enqueue(unsigned int index, unsigned int mx, unsigned int my,
                                         unsigned int src_x, unsigned int src_y)
 {
@@ -435,8 +406,8 @@ void WallInflationLayer::deleteKernels()
 
 void WallInflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
 {
-    if(  ( fabs( weight_           - cost_scaling_factor ) >= EPS )
-      || ( fabs( inflation_radius_ - inflation_radius    ) >= EPS ) )
+    if(  ( fabs( weight_           - cost_scaling_factor ) >= EPS )     //! If setted new weight
+      || ( fabs( inflation_radius_ - inflation_radius    ) >= EPS ) )   //! or if setted new inflation radius
     {
         // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
         // when accessing the cached arrays
@@ -448,6 +419,7 @@ void WallInflationLayer::setInflationParameters(double inflation_radius, double 
         cell_wall_dead_distance_ = cellDistance( wall_dead_distance_ );
         weight_ = cost_scaling_factor;
 
+        //! mean and dispersion values for computing Gaussian
         mean_ = inflation_radius + inscribed_radius_;
         dispersion_ = weight_;
 
