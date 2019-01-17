@@ -46,9 +46,15 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
             Point obstcPoint = vObs.getClosestObstacleToPoint( checkPoint );
 
             double angle = atan2( int( obstcPoint.y - checkPoint.y ),
-                                  int( obstcPoint.x - checkPoint.y ) );
+                                  int( obstcPoint.x - checkPoint.x ) );
 
             point.orientation = tf::createQuaternionMsgFromYaw( angle );
+            ROS_DEBUG_NAMED( "obstacle_orientation", "Path point yaw orientation: %f\n"
+                                                     "\tobst point: %d %d\n"
+                                                     "\ttgt point:  %d %d",
+                                angle,
+                                obstcPoint.x, obstcPoint.y,
+                                checkPoint.x, checkPoint.y );
         }
         catch( const std::runtime_error &e )
         {
@@ -95,7 +101,7 @@ Point ObstacleVector::getClosestObstacleToPoint(const Point &p)
     }
 
     Point  minPoint;
-    double minPath = -1;
+    double minPath = std::numeric_limits< double >::max();
 
     for( auto it = begin(); it != end(); ++it )
     {

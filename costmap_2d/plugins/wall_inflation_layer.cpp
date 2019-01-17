@@ -144,36 +144,12 @@ void WallInflationLayer::updateBounds(double robot_x, double robot_y, double rob
     UNUSED( robot_y   );
     UNUSED( robot_yaw );
 
-    if( need_reinflation_ )
-    {
-        last_min_x_ = *min_x;
-        last_min_y_ = *min_y;
-        last_max_x_ = *max_x;
-        last_max_y_ = *max_y;
-        // For some reason when I make these -<double>::max() it does not
-        // work with Costmap2D::worldToMapEnforceBounds(), so I'm using
-        // -<float>::max() instead.
-        *min_x = double( -std::numeric_limits<float>::max() );
-        *min_y = double( -std::numeric_limits<float>::max() );
-        *max_x = double(  std::numeric_limits<float>::max() );
-        *max_y = double(  std::numeric_limits<float>::max() );
-        need_reinflation_ = false;
-    }
-    else
-    {
-        double tmp_min_x = last_min_x_;
-        double tmp_min_y = last_min_y_;
-        double tmp_max_x = last_max_x_;
-        double tmp_max_y = last_max_y_;
-        last_min_x_ = *min_x;
-        last_min_y_ = *min_y;
-        last_max_x_ = *max_x;
-        last_max_y_ = *max_y;
-        *min_x = std::min(tmp_min_x, *min_x) - inflation_radius_;
-        *min_y = std::min(tmp_min_y, *min_y) - inflation_radius_;
-        *max_x = std::max(tmp_max_x, *max_x) + inflation_radius_;
-        *max_y = std::max(tmp_max_y, *max_y) + inflation_radius_;
-    }
+    //! Setting process area all aviable map
+    costmap_2d::Costmap2D* const costmap = this->layered_costmap_->getCostmap();
+    *min_x = costmap->getOriginX();
+    *min_y = costmap->getOriginY();
+    *max_x = *min_x + costmap->getSizeInMetersX();
+    *max_y = *min_y + costmap->getSizeInMetersY();
 }
 
 void WallInflationLayer::onFootprintChanged()
