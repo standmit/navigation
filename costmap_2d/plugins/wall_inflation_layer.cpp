@@ -50,9 +50,9 @@ using costmap_2d::NO_INFORMATION;
 
 #define UNUSED(x)(void)x
 #define EPS 1e-9
-
+ 
 namespace costmap_2d
-{
+  {
 
 WallInflationLayer::WallInflationLayer()
     : inflation_radius_(0)
