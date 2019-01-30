@@ -10,6 +10,7 @@
 
 #define UNUSED(x)(void(x))
 
+#define DEG_TO_RAD(x)((x)*(M_PI/180))
 namespace global_planner
 {
 
@@ -31,6 +32,7 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
     //! Get obstacles list
     ObstacleVector vObs = getObstacles();
 
+    double additionalRotation = DEG_TO_RAD(30);
     //! Process each path point
     for( auto it = path.begin(); it != path.end(); ++it )
     {
@@ -46,7 +48,7 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
             Point obstcPoint = vObs.getClosestObstacleToPoint( checkPoint );
 
             double angle = atan2( int( obstcPoint.y - checkPoint.y ),
-                                  int( obstcPoint.x - checkPoint.x ) );
+                                  int( obstcPoint.x - checkPoint.x ) ) + additionalRotation;
 
             point.orientation = tf::createQuaternionMsgFromYaw( angle );
             ROS_DEBUG_NAMED( "obstacle_orientation", "Path point yaw orientation: %f\n"
