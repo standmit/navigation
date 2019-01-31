@@ -32,7 +32,6 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
     //! Get obstacles list
     ObstacleVector vObs = getObstacles();
 
-    double additionalRotation = DEG_TO_RAD(30);
     //! Process each path point
     for( auto it = path.begin(); it != path.end(); ++it )
     {
@@ -48,7 +47,7 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
             Point obstcPoint = vObs.getClosestObstacleToPoint( checkPoint );
 
             double angle = atan2( int( obstcPoint.y - checkPoint.y ),
-                                  int( obstcPoint.x - checkPoint.x ) ) + additionalRotation;
+                                  int( obstcPoint.x - checkPoint.x ) ) + _additionalRotateValue;
 
             point.orientation = tf::createQuaternionMsgFromYaw( angle );
             ROS_DEBUG_NAMED( "obstacle_orientation", "Path point yaw orientation: %f\n"
@@ -71,6 +70,11 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
 void OrientationOnObstacle::setCostmap(costmap_2d::Costmap2D *costmap)
 {
     _costmap = costmap;
+}
+
+void OrientationOnObstacle::setAdditionalRotateDegree(double value)
+{
+    _additionalRotateValue = DEG_TO_RAD( value );
 }
 
 ObstacleVector OrientationOnObstacle::getObstacles() const

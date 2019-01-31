@@ -57,13 +57,17 @@ class OrientationOnObstacle: public OrientationFilter
 {
 
 public:
-    OrientationOnObstacle(): OrientationFilter(), _costmap( nullptr ){}
+    OrientationOnObstacle():
+        OrientationFilter(),
+        _costmap( nullptr ),
+        _additionalRotateValue( 0 ){}
     virtual ~OrientationOnObstacle(){}
 
     virtual void processPath( const geometry_msgs::PoseStamped &start,
                               std::vector< geometry_msgs::PoseStamped > &path );
     void setCostmap( costmap_2d::Costmap2D *costmap );
 
+    void setAdditionalRotateDegree( double value );
 protected:
     /**
      * @brief returns pose of the closest obstacle
@@ -79,6 +83,7 @@ protected:
     ObstacleVector getObstacles() const;
 
     costmap_2d::Costmap2D *_costmap;
+    double _additionalRotateValue;
 };
 
 }
