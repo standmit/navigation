@@ -147,6 +147,10 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         {
             OrientationOnObstacle *obs = new OrientationOnObstacle();
             obs->setCostmap( costmap_ );
+
+            double additionalRotateAngle;
+            private_nh.param( "additional_rotate_value", additionalRotateAngle, 30.0 );
+            obs->setAdditionalRotateDegree( additionalRotateAngle );
             orientation_filter_ = obs;
         }
         else
