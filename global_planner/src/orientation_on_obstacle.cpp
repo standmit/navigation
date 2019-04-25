@@ -33,7 +33,7 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
     ObstacleVector vObs = getObstacles();
 
     //! Process each path point
-    for( auto it = path.begin(); it != path.end(); ++it )
+    for( auto it = path.begin(); it != path.end()-1; ++it )
     {
         Point checkPoint;
 
