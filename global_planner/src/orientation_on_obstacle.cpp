@@ -3,9 +3,8 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 
-#include "costmap_2d/cost_values.h"
+#include "global_planner/obstacle_vector.h"
 
-#include "global_planner/priority_vector.h"
 #include "exception"
 
 #define UNUSED(x)(void(x))
@@ -13,12 +12,6 @@
 #define DEG_TO_RAD(x)((x)*(M_PI/180))
 namespace global_planner
 {
-
-double calcPath( const Point &p1, const Point &p2 )
-{
-    Point t = p1 - p2;
-    return hypot( int( t.x ), int( t.y ) );
-}
 
 void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start, std::vector< geometry_msgs::PoseStamped > &path )
 {
@@ -30,7 +23,7 @@ void OrientationOnObstacle::processPath(const geometry_msgs::PoseStamped &start,
     }
 
     //! Get obstacles list
-    ObstacleVector vObs = getObstacles();
+    ObstacleVector vObs = ObstacleVector::getObstacles(*_costmap);
 
     //! Process each path point
     for( auto it = path.begin(); it != path.end()-1; ++it )
@@ -76,52 +69,5 @@ void OrientationOnObstacle::setAdditionalRotateDegree(double value)
 {
     _additionalRotateValue = DEG_TO_RAD( value );
 }
-
-ObstacleVector OrientationOnObstacle::getObstacles() const
-{
-    ObstacleVector result;
-
-    uint sizeY = _costmap->getSizeInCellsY();
-    uint sizeX = _costmap->getSizeInCellsX();
-
-    for( uint i = 0; i < sizeY; ++i )
-    {
-        for( uint j = 0; j < sizeX; ++j )
-        {
-            unsigned char cell = _costmap->getCost( j, i );
-            if( cell == costmap_2d::LETHAL_OBSTACLE )
-            {
-                result.push_to_heap( Point( j, i ) );
-            }
-        }
-    }
-
-    return result;
-}
-
-Point ObstacleVector::getClosestObstacleToPoint(const Point &p)
-{
-    if( empty() )
-    {
-        throw std::runtime_error( "Obstacle vector is empty" );
-    }
-
-    Point  minPoint;
-    double minPath = std::numeric_limits< double >::max();
-
-    for( auto it = begin(); it != end(); ++it )
-    {
-        double path = calcPath( p, (*it) );
-        if( path < minPath )
-        {
-            minPath  = path;
-            minPoint = (*it);
-        }
-    }
-
-    return minPoint;
-}
-
-
 
 }
