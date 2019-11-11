@@ -62,7 +62,8 @@ namespace costmap_2d
 class ObstacleLayer : public CostmapLayer
 {
 public:
-  ObstacleLayer()
+  ObstacleLayer():
+      combination_method_(0)
   {
     costmap_ = NULL;  // this is the unsigned char* member of parent class Costmap2D.
   }
