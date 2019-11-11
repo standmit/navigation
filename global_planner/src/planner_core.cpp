@@ -106,6 +106,9 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         else
             convert_offset_ = 0.0;
 
+        bool fProcessFullMapPotentials;
+        private_nh.param( "process_full_map_potentials", fProcessFullMapPotentials, false );
+
         bool use_quadratic;
         private_nh.param("use_quadratic", use_quadratic, true);
         if (use_quadratic)
@@ -120,6 +123,10 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             DijkstraExpansion* de = new DijkstraExpansion(p_calc_, cx, cy);
             if(!old_navfn_behavior_)
                 de->setPreciseStart(true);
+
+            // Disables stop when we found target point (gets potentials from full map)
+            de->setProcessFullMap( fProcessFullMapPotentials );
+
             planner_ = de;
         }
         else
