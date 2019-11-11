@@ -140,7 +140,19 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         else
             path_maker_ = new GradientPath(p_calc_);
             
-        orientation_filter_ = new OrientationFilter();
+        //! Enabling drone orientation on closest obstacle
+        bool fObstacleOrientation;
+        private_nh.param( "orientation_on_obstacle", fObstacleOrientation, false );
+        if( fObstacleOrientation )
+        {
+            OrientationOnObstacle *obs = new OrientationOnObstacle();
+            obs->setCostmap( costmap_ );
+            orientation_filter_ = obs;
+        }
+        else
+        {
+            orientation_filter_ = new OrientationFilter();
+        }
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
