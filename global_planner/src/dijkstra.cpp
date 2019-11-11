@@ -142,8 +142,7 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
     {
         // check if priority blocks empty
         if(  ( currentEnd_ == 0 )
-          && ( nextEnd_    == 0 )
-          && ( !fProcessFullMap_ ) )
+          && ( nextEnd_    == 0 ) )
         {
             return true;
         }
@@ -190,6 +189,7 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
         }
 
         // check if we've hit the Start cell
+        //! If we have to process all map, keep processing
         if(  ( potential[ startCell ] < POT_HIGH_F)
           && ( !fProcessFullMap_ ) )
         {
@@ -198,12 +198,13 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
     }
     //ROS_INFO("CYCLES %d/%d ", cycle, cycles);
 
-//    return true;
-
+    //! In case of full processing map, we reach out goal (all ccycles processed)
+    //! Not in case of full processing map, if we process all cycles that means
+    //! Path to target not found
     if(  ( cycle < cycles   )
       || ( fProcessFullMap_ ) )
     {
-        return true; // finished up here
+        return true;
     }
     else
     {

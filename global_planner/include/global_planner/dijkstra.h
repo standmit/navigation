@@ -73,10 +73,14 @@ class DijkstraExpansion : public Expander {
         }
 
         void setPreciseStart(bool precise){ precise_ = precise; }
+
+        /**
+         * @brief turns on/off full map scanning mode. If enabled, requests additional time to process all data
+         * @param value - flag value
+         */
         void setProcessFullMap( bool value ){ fProcessFullMap_ = value; }
 
     private:
-
         /**
          * @brief  Updates the cell at index n
          * @param costs The costmap
