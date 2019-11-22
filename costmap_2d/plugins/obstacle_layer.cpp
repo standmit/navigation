@@ -79,6 +79,8 @@ void ObstacleLayer::onInitialize()
   ros::NodeHandle prefix_nh;
   const std::string tf_prefix = tf::getPrefixParam(prefix_nh);
 
+  masterful_ = nh.param("masterful", false);
+
   // now we need to split the topics based on whitespace which we can use a stringstream for
   std::stringstream ss(topics_string);
 
@@ -347,16 +349,39 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
-  std::vector<Observation> observations, clearing_observations;
+  std::vector<Observation> observations, clearing_observations, stale_observations;
 
   // get the marking observations
-  current = current && getMarkingObservations(observations);
+  current = current && getMarkingObservations(observations, masterful_ ? &stale_observations : NULL);
 
   // get the clearing observations
   current = current && getClearingObservations(clearing_observations);
 
   // update the global current status
   current_ = current;
+
+  if (masterful_) {
+	  // remove stale points from costmap
+	  for (std::vector<Observation>::const_iterator it = stale_observations.begin(); it != stale_observations.end(); ++it)
+	  {
+		  const pcl::PointCloud<pcl::PointXYZ>& cloud = *(it->cloud_);
+
+		  for (pcl::PointCloud<pcl::PointXYZ>::const_iterator point = cloud.points.begin(); point != cloud.points.end(); ++point)
+		  {
+			  double px = point->x, py = point->y;
+
+			  unsigned int mx, my;
+
+			  if (worldToMap(px, py, mx, my)) {
+				  unsigned char& pixel = costmap_[getIndex(mx, my)];
+				  if (pixel == LETHAL_OBSTACLE) {
+					  pixel = default_value_;
+					  touch(px, py, min_x, min_y, max_x, max_y);
+				  }
+			  }
+		  }
+	  }
+  }
 
   // raytrace freespace
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
@@ -463,14 +488,14 @@ void ObstacleLayer::clearStaticObservations(bool marking, bool clearing)
     static_clearing_observations_.clear();
 }
 
-bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_observations) const
+bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_observations, std::vector<Observation>* const stale_observations) const
 {
   bool current = true;
   // get the marking observations
   for (unsigned int i = 0; i < marking_buffers_.size(); ++i)
   {
     marking_buffers_[i]->lock();
-    marking_buffers_[i]->getObservations(marking_observations);
+    marking_buffers_[i]->getObservations(marking_observations, stale_observations);
     current = marking_buffers_[i]->isCurrent() && current;
     marking_buffers_[i]->unlock();
   }

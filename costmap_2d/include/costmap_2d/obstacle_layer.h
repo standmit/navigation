@@ -120,9 +120,10 @@ protected:
   /**
    * @brief  Get the observations used to mark space
    * @param marking_observations A reference to a vector that will be populated with the observations
+   * @param stale_observations	A pointer to a vector that will be populated with stale observations
    * @return True if all the observation buffers are current, false otherwise
    */
-  bool getMarkingObservations(std::vector<costmap_2d::Observation>& marking_observations) const;
+  bool getMarkingObservations(std::vector<costmap_2d::Observation>& marking_observations, std::vector<costmap_2d::Observation>* const stale_observations = NULL) const;
 
   /**
    * @brief  Get the observations used to clear space
@@ -168,6 +169,8 @@ protected:
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
 
   int combination_method_;
+
+  bool masterful_; ///< @brief Immediately clear area if obstacle disappear
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);

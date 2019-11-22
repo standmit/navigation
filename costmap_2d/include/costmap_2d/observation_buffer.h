@@ -111,8 +111,9 @@ public:
   /**
    * @brief  Pushes copies of all current observations onto the end of the vector passed in
    * @param  observations The vector to be filled
+   * @param stale_observations	Pointer to vector to be filled with stale observations
    */
-  void getObservations(std::vector<Observation>& observations);
+  void getObservations(std::vector<Observation>& observations, std::vector<Observation>* const stale_observations = NULL);
 
   /**
    * @brief  Check if the observation buffer is being update at its expected rate
@@ -142,10 +143,6 @@ public:
   void resetLastUpdated();
 
 private:
-  /**
-   * @brief  Removes any stale observations from the buffer list
-   */
-  void purgeStaleObservations();
 
   tf::TransformListener& tf_;
   const ros::Duration observation_keep_time_;

@@ -190,49 +190,30 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
   // if the update was successful, we want to update the last updated time
   last_updated_ = ros::Time::now();
 
-  // we'll also remove any stale observations from the list
-  purgeStaleObservations();
 }
 
 // returns a copy of the observations
-void ObservationBuffer::getObservations(vector<Observation>& observations)
+void ObservationBuffer::getObservations(vector<Observation>& observations, vector<Observation>* const stale_observations)
 {
-  // first... let's make sure that we don't have any stale observations
-  purgeStaleObservations();
+	if (not observation_list_.empty()) {
+		std::list<Observation>::iterator first_stale;
+		if (observation_keep_time_ == ros::Duration(0.0)) {
+			first_stale = observation_list_.begin();
+			++first_stale;
+		} else {
+			for (first_stale = observation_list_.begin(); first_stale != observation_list_.end(); ++first_stale)
+				if ((last_updated_ - pcl_conversions::fromPCL(first_stale->cloud_->header.stamp)) > observation_keep_time_)
+					break;
+		}
 
-  // now we'll just copy the observations for the caller
-  list<Observation>::iterator obs_it;
-  for (obs_it = observation_list_.begin(); obs_it != observation_list_.end(); ++obs_it)
-  {
-    observations.push_back(*obs_it);
-  }
-}
+		std::copy(observation_list_.begin(), first_stale, std::back_inserter(observations));
 
-void ObservationBuffer::purgeStaleObservations()
-{
-  if (!observation_list_.empty())
-  {
-    list<Observation>::iterator obs_it = observation_list_.begin();
-    // if we're keeping observations for no time... then we'll only keep one observation
-    if (observation_keep_time_ == ros::Duration(0.0))
-    {
-      observation_list_.erase(++obs_it, observation_list_.end());
-      return;
-    }
+		if (stale_observations)
+			std::copy(first_stale, observation_list_.end(), std::back_inserter(*stale_observations));
 
-    // otherwise... we'll have to loop through the observations to see which ones are stale
-    for (obs_it = observation_list_.begin(); obs_it != observation_list_.end(); ++obs_it)
-    {
-      Observation& obs = *obs_it;
-      // check if the observation is out of date... and if it is, remove it and those that follow from the list
-      ros::Duration time_diff = last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp;
-      if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp) > observation_keep_time_)
-      {
-        observation_list_.erase(obs_it, observation_list_.end());
-        return;
-      }
-    }
-  }
+		ROS_DEBUG("Purge %lu stale observations", std::distance(first_stale, observation_list_.end()));
+		observation_list_.erase(first_stale, observation_list_.end());
+	}
 }
 
 bool ObservationBuffer::isCurrent() const
